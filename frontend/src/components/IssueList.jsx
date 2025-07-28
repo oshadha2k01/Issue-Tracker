@@ -4,6 +4,24 @@ import { FiSearch, FiEye, FiEdit3, FiTrash2, FiTag } from 'react-icons/fi';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+
+const isUserLoggedIn = () => {
+  const token = localStorage.getItem('token');
+  const username = localStorage.getItem('username');
+  return !!(token && username);
+};
+
+const showLoginRequired = () => {
+  Swal.fire({
+    title: 'Login Required!',
+    text: 'Please login first to do this!',
+    icon: 'warning',
+    confirmButtonText: 'OK',
+    confirmButtonColor: '#1e3a8a'
+  });
+};
+
 const IssueForm = ({ onSubmit, onCancel, editIssue, viewMode }) => {
   const [formData, setFormData] = useState({
     title: '',
@@ -29,25 +47,31 @@ const IssueForm = ({ onSubmit, onCancel, editIssue, viewMode }) => {
 
   const validateField = (name, value) => {
     let error = '';
+    
     if (name === 'title') {
       if (!value.trim()) error = 'Title is required';
       else if (value.length < 3) error = 'Title must be at least 3 characters';
       else if (value.length > 100) error = 'Title must be less than 100 characters';
     }
+    
     if (name === 'description') {
       if (!value.trim()) error = 'Description is required';
       else if (value.length < 10) error = 'Description must be at least 10 characters';
       else if (value.length > 500) error = 'Description must be less than 500 characters';
     }
+    
     if (name === 'severity' && !['Low', 'Medium', 'High'].includes(value)) {
       error = 'Please select a valid severity';
     }
+    
     if (name === 'priority' && !['Low', 'Normal', 'High'].includes(value)) {
       error = 'Please select a valid priority';
     }
+    
     if (name === 'status' && !['Open', 'In Progress', 'Testing', 'Resolved', 'Closed'].includes(value)) {
       error = 'Please select a valid status';
     }
+    
     return error;
   };
 
@@ -95,6 +119,11 @@ const IssueForm = ({ onSubmit, onCancel, editIssue, viewMode }) => {
     e.preventDefault();
     if (viewMode) return;
     
+    if (!isUserLoggedIn()) {
+      showLoginRequired();
+      return;
+    }
+    
     const newErrors = {};
     Object.keys(formData).forEach(field => {
       const error = validateField(field, formData[field]);
@@ -115,9 +144,12 @@ const IssueForm = ({ onSubmit, onCancel, editIssue, viewMode }) => {
       return;
     }
     
+    const token = localStorage.getItem('token');
+    const headers = { Authorization: `Bearer ${token}` };
+    
     const request = editIssue
-      ? axios.put(`http://localhost:5000/api/issues/${editIssue._id}`, formData)
-      : axios.post('http://localhost:5000/api/issues', formData);
+      ? axios.put(`${API_BASE_URL}/api/issues/${editIssue._id}`, formData, { headers })
+      : axios.post(`${API_BASE_URL}/api/issues`, formData, { headers });
 
     request.then(res => {
       Swal.fire({
@@ -337,7 +369,7 @@ const IssueList = () => {
 
   const fetchIssues = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/issues');
+      const response = await axios.get(`${API_BASE_URL}/api/issues`);
       setIssues(response.data);
       setFilteredIssues(response.data);
     } catch (error) {
@@ -383,18 +415,40 @@ const IssueList = () => {
   };
 
   const deleteIssue = async (id) => {
-    try {
-      await axios.delete(`http://localhost:5000/api/issues/${id}`);
-      setIssues(issues.filter(issue => issue._id !== id));
-      Swal.fire({
-        title: 'Deleted!',
-        text: 'Issue has been deleted successfully',
-        icon: 'success',
-        timer: 1500,
-        showConfirmButton: false
-      });
-    } catch (error) {
-      Swal.fire('Error', error.message, 'error');
+    if (!isUserLoggedIn()) {
+      showLoginRequired();
+      return;
+    }
+
+    const result = await Swal.fire({
+      title: 'Delete Issue?',
+      text: 'Are you sure you want to delete this issue? This action cannot be undone.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Yes, Delete it!',
+      cancelButtonText: 'Cancel',
+      reverseButtons: true
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const token = localStorage.getItem('token');
+        await axios.delete(`${API_BASE_URL}/api/issues/${id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setIssues(issues.filter(issue => issue._id !== id));
+        Swal.fire({
+          title: 'Deleted!',
+          text: 'Issue has been deleted successfully',
+          icon: 'success',
+          timer: 1500,
+          showConfirmButton: false
+        });
+      } catch (error) {
+        Swal.fire('Error', error.message, 'error');
+      }
     }
   };
 
@@ -413,13 +467,29 @@ const IssueList = () => {
     setEditingIssue(null);
   };
 
+  const openCreateModal = () => {
+    if (!isUserLoggedIn()) {
+      showLoginRequired();
+      return;
+    }
+    setShowModal(true);
+  };
+
   const openEditModal = (issue) => {
+    if (!isUserLoggedIn()) {
+      showLoginRequired();
+      return;
+    }
     setEditingIssue(issue);
     setViewingIssue(null);
     setShowModal(true);
   };
 
   const openViewModal = (issue) => {
+    if (!isUserLoggedIn()) {
+      showLoginRequired();
+      return;
+    }
     setViewingIssue(issue);
     setEditingIssue(null);
     setShowModal(true);
@@ -511,7 +581,7 @@ const IssueList = () => {
             className="flex justify-center xl:justify-end"
           >
             <button 
-              onClick={() => setShowModal(true)}
+              onClick={openCreateModal}
               className="bg-blue-800 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:bg-blue-900 transition-all duration-200 inline-flex items-center gap-2 border-0 whitespace-nowrap justify-center"
               style={{ height: '46px', minHeight: '46px', borderRadius: '10px' }}
             >
@@ -643,11 +713,11 @@ const IssueList = () => {
           transition={{ duration: 0.5 }}
         >
           <div className="text-muted mb-3">
-            <FiTag size={48} />
+          
           </div>
           <h5 className="text-muted mb-2">No Issues Found</h5>
           <button 
-            onClick={() => setShowModal(true)}
+            onClick={openCreateModal}
             className="btn btn-primary d-flex align-items-center justify-content-center mx-auto gap-2"
             style={{ backgroundColor: '#1e3a8a' }}
           >
