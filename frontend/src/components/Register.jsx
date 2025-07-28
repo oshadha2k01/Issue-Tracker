@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { FiEye, FiEyeOff } from "react-icons/fi";
 import Swal from "sweetalert2";
 import { authAPI } from "../services/api";
 
@@ -13,6 +14,8 @@ export default function Register() {
 
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const navigate = useNavigate();
 
@@ -164,6 +167,22 @@ export default function Register() {
       default:
         break;
     }
+  };
+
+  // Toggle password visibility for 2 seconds
+  const togglePasswordVisibility = () => {
+    setShowPassword(true);
+    setTimeout(() => {
+      setShowPassword(false);
+    }, 2000);
+  };
+
+  // Toggle confirm password visibility for 2 seconds
+  const toggleConfirmPasswordVisibility = () => {
+    setShowConfirmPassword(true);
+    setTimeout(() => {
+      setShowConfirmPassword(false);
+    }, 2000);
   };
 
   const handleSubmit = async (e) => {
@@ -332,24 +351,33 @@ export default function Register() {
                 >
                   Password
                 </label>
-                <input
-                  type="password"
-                  className={`w-full px-3 py-2 border-2 rounded-lg transition-all duration-300 h-10 ${
-                    errors.password
-                      ? "border-red-500 focus:ring-red-200"
-                      : touched.password && !errors.password
-                      ? "border-green-500 focus:ring-green-200"
-                      : "border-gray-300 focus:ring-blue-200"
-                  } focus:outline-none focus:ring-2 focus:border-blue-500`}
-                  id="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  onKeyDown={(e) => handleKeyPress(e, "password")}
-                  placeholder="Enter your password"
-                  maxLength="30"
-                />
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    className={`w-full px-3 py-2 pr-10 border-2 rounded-lg transition-all duration-300 h-10 ${
+                      errors.password
+                        ? "border-red-500 focus:ring-red-200"
+                        : touched.password && !errors.password
+                        ? "border-green-500 focus:ring-green-200"
+                        : "border-gray-300 focus:ring-blue-200"
+                    } focus:outline-none focus:ring-2 focus:border-blue-500`}
+                    id="password"
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    onKeyDown={(e) => handleKeyPress(e, "password")}
+                    placeholder="Enter your password"
+                    maxLength="30"
+                  />
+                  <button
+                    type="button"
+                    onClick={togglePasswordVisibility}
+                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-gray-700 transition-colors duration-200"
+                  >
+                    {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                  </button>
+                </div>
                 {errors.password && (
                   <div className="text-red-500 text-sm mt-1">
                     <i className="fas fa-exclamation-circle mr-1"></i>
@@ -365,24 +393,33 @@ export default function Register() {
                 >
                   Confirm Password
                 </label>
-                <input
-                  type="password"
-                  className={`w-full px-3 py-2 border-2 rounded-lg transition-all duration-300 h-10 ${
-                    errors.confirmPassword
-                      ? "border-red-500 focus:ring-red-200"
-                      : touched.confirmPassword && !errors.confirmPassword
-                      ? "border-green-500 focus:ring-green-200"
-                      : "border-gray-300 focus:ring-blue-200"
-                  } focus:outline-none focus:ring-2 focus:border-blue-500`}
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  onKeyDown={(e) => handleKeyPress(e, "password")}
-                  placeholder="Confirm your password"
-                  maxLength="30"
-                />
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    className={`w-full px-3 py-2 pr-10 border-2 rounded-lg transition-all duration-300 h-10 ${
+                      errors.confirmPassword
+                        ? "border-red-500 focus:ring-red-200"
+                        : touched.confirmPassword && !errors.confirmPassword
+                        ? "border-green-500 focus:ring-green-200"
+                        : "border-gray-300 focus:ring-blue-200"
+                    } focus:outline-none focus:ring-2 focus:border-blue-500`}
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    onKeyDown={(e) => handleKeyPress(e, "password")}
+                    placeholder="Confirm your password"
+                    maxLength="30"
+                  />
+                  <button
+                    type="button"
+                    onClick={toggleConfirmPasswordVisibility}
+                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-gray-700 transition-colors duration-200"
+                  >
+                    {showConfirmPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                  </button>
+                </div>
                 {errors.confirmPassword && (
                   <div className="text-red-500 text-sm mt-1">
                     <i className="fas fa-exclamation-circle mr-1"></i>
@@ -405,7 +442,7 @@ export default function Register() {
                 Already have an account?{" "}
                 <Link
                   to="/login"
-                  className="text-blue-600 hover:text-blue-800 font-medium"
+                  className="text-blue-600 hover:text-blue-800 font-medium text-decoration-none"
                 >
                   Sign in
                 </Link>

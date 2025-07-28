@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { FcGoogle } from "react-icons/fc";
+import { FiEye, FiEyeOff } from "react-icons/fi";
 import { signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "../config/firebase";
 import Swal from "sweetalert2";
@@ -14,9 +15,11 @@ export default function Login() {
 
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
+  const [showPassword, setShowPassword] = useState(false);
 
   const navigate = useNavigate();
 
+  //Fields validations
   const validateField = (name, value) => {
     let error = "";
 
@@ -50,11 +53,9 @@ export default function Login() {
 
     switch (name) {
       case "username":
-        // Allow letters, numbers, underscores, and @ symbol
         filteredValue = value.replace(/[^a-zA-Z0-9_@]/g, "");
         break;
       case "password":
-        // Block most special characters, allow basic ones for password security
         filteredValue = value.replace(/[^a-zA-Z0-9!@#$%^&*]/g, "");
         break;
       default:
@@ -96,7 +97,6 @@ export default function Login() {
 
     switch (fieldType) {
       case "username":
-        // Allow letters, numbers, underscores, @ symbol, and control keys
         if (
           !/[a-zA-Z0-9_@]/.test(char) &&
           !["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab"].includes(
@@ -107,7 +107,6 @@ export default function Login() {
         }
         break;
       case "password":
-        // Allow letters, numbers, basic special characters, and control keys
         if (
           !/[a-zA-Z0-9!@#$%^&*]/.test(char) &&
           !["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab"].includes(
@@ -120,6 +119,14 @@ export default function Login() {
       default:
         break;
     }
+  };
+
+  // Toggle password visibility for 2 seconds
+  const togglePasswordVisibility = () => {
+    setShowPassword(true);
+    setTimeout(() => {
+      setShowPassword(false);
+    }, 2000);
   };
 
   const handleSubmit = async (e) => {
@@ -149,7 +156,7 @@ export default function Login() {
     try {
       Swal.fire({
         title: "Logging in...",
-        text: "Please wait while we authenticate you.",
+        text: "Please wait.",
         allowOutsideClick: false,
         didOpen: () => {
           Swal.showLoading();
@@ -175,8 +182,8 @@ export default function Login() {
       }
 
       Swal.fire({
-        title: "Success!",
-        text: `Welcome back, ${response.username}! Redirecting...`,
+        title: "Welcome!",
+        text: `${response.username}! Redirecting...`,
         icon: "success",
         timer: 2000,
         showConfirmButton: false,
@@ -203,28 +210,26 @@ export default function Login() {
     try {
       Swal.fire({
         title: "Connecting to Google...",
-        text: "Please wait while we open the Google sign-in window.",
         allowOutsideClick: false,
         didOpen: () => {
           Swal.showLoading();
         },
       });
 
-      // Sign in with Google using Firebase
+      // Sign in with Google using Firebase (Oauth)
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
 
       console.log("Google sign-in successful:", user);
 
-      // Get the Firebase ID token
       const idToken = await user.getIdToken();
 
-      // Send the token to your backend for verification and user creation/login
+      // Send the token to your backend
       try {
-        const response = await fetch('http://localhost:5000/api/auth/google', {
-          method: 'POST',
+        const response = await fetch("http://localhost:5000/api/auth/google", {
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             idToken,
@@ -235,12 +240,11 @@ export default function Login() {
         });
 
         if (!response.ok) {
-          throw new Error('Backend authentication failed');
+          throw new Error("Backend authentication failed");
         }
 
         const data = await response.json();
 
-        // Store the backend token in localStorage
         if (data.token) {
           localStorage.setItem("token", data.token);
           localStorage.setItem("username", data.username || user.displayName);
@@ -254,8 +258,8 @@ export default function Login() {
         }
 
         Swal.fire({
-          title: "Success!",
-          text: `Welcome, ${user.displayName}! Redirecting...`,
+          title: "Welcome!",
+          text: `${user.displayName}! Redirecting...`,
           icon: "success",
           timer: 2000,
           showConfirmButton: false,
@@ -265,19 +269,16 @@ export default function Login() {
         setTimeout(() => {
           navigate("/");
         }, 2000);
-
       } catch (backendError) {
         console.error("Backend authentication error:", backendError);
-        
-        // If backend fails, you can still proceed with client-side auth
-        // Store Firebase user data directly (for development/testing)
+
         localStorage.setItem("token", idToken);
         localStorage.setItem("username", user.displayName);
         window.dispatchEvent(new CustomEvent("authChange"));
 
         Swal.fire({
-          title: "Success!",
-          text: `Welcome, ${user.displayName}! Redirecting... (Using Firebase auth)`,
+          title: "Welcome!",
+          text: `${user.displayName}! Redirecting...`,
           icon: "success",
           timer: 2000,
           showConfirmButton: false,
@@ -288,16 +289,16 @@ export default function Login() {
           navigate("/");
         }, 2000);
       }
-
     } catch (error) {
       console.error("Google sign-in error:", error);
-      
-      let errorMessage = "Unable to sign in with Google. Please try again.";
-      
-      if (error.code === 'auth/popup-closed-by-user') {
-        errorMessage = "Sign-in was cancelled. Please try again.";
-      } else if (error.code === 'auth/popup-blocked') {
-        errorMessage = "Pop-up was blocked by your browser. Please allow pop-ups and try again.";
+
+      let errorMessage = "Cannot sign in with Google. Please try again.";
+
+      if (error.code === "authenticaion closed by user") {
+        errorMessage = "Sign In Failed, Please try again.";
+      } else if (error.code === "authentication blocked") {
+        errorMessage =
+          "Pop-up was blocked by your browser. Please allow pop-ups and try again.";
       }
 
       Swal.fire({
@@ -326,6 +327,7 @@ export default function Login() {
         <div className="w-full max-w-md">
           <div className="bg-white rounded-lg shadow-lg p-6">
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/*Username */}
               <div>
                 <label
                   htmlFor="username"
@@ -359,6 +361,7 @@ export default function Login() {
                 )}
               </div>
 
+              {/*Password */}
               <div>
                 <label
                   htmlFor="password"
@@ -366,24 +369,37 @@ export default function Login() {
                 >
                   Password
                 </label>
-                <input
-                  type="password"
-                  className={`w-full px-3 py-2 border-2 rounded-lg transition-all duration-300 h-10 ${
-                    errors.password
-                      ? "border-red-500 focus:ring-red-200"
-                      : touched.password && !errors.password
-                      ? "border-green-500 focus:ring-green-200"
-                      : "border-gray-300 focus:ring-blue-200"
-                  } focus:outline-none focus:ring-2 focus:border-blue-500`}
-                  id="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  onKeyDown={(e) => handleKeyPress(e, "password")}
-                  placeholder="Enter your password"
-                  maxLength="30"
-                />
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    className={`w-full px-3 py-2 pr-10 border-2 rounded-lg transition-all duration-300 h-10 ${
+                      errors.password
+                        ? "border-red-500 focus:ring-red-200"
+                        : touched.password && !errors.password
+                        ? "border-green-500 focus:ring-green-200"
+                        : "border-gray-300 focus:ring-blue-200"
+                    } focus:outline-none focus:ring-2 focus:border-blue-500`}
+                    id="password"
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    onKeyDown={(e) => handleKeyPress(e, "password")}
+                    placeholder="Enter your password"
+                    maxLength="30"
+                  />
+                  <button
+                    type="button"
+                    onClick={togglePasswordVisibility}
+                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-gray-700 transition-colors duration-200"
+                  >
+                    {showPassword ? (
+                      <FiEyeOff size={18} />
+                    ) : (
+                      <FiEye size={18} />
+                    )}
+                  </button>
+                </div>
                 {errors.password && (
                   <div className="text-red-500 text-sm mt-1">
                     <i className="fas fa-exclamation-circle mr-1"></i>
@@ -400,7 +416,7 @@ export default function Login() {
                 Login
               </button>
             </form>
-
+            {/*Oauthentication button with Google  */}
             <div className="flex items-center my-4">
               <hr className="flex-grow border-gray-300" />
               <span className="px-3 text-sm text-gray-500 bg-white">or</span>
@@ -422,7 +438,7 @@ export default function Login() {
                 Don't have an account?{" "}
                 <Link
                   to="/register"
-                  className="text-blue-600 hover:text-blue-800 font-medium"
+                  className="text-blue-600 hover:text-blue-800 font-medium text-decoration-none"
                 >
                   Sign up
                 </Link>

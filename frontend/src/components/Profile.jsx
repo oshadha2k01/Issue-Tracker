@@ -205,7 +205,7 @@ const Profile = () => {
       window.dispatchEvent(new CustomEvent("authChange"));
 
       Swal.fire({
-        title: "Success!",
+        title: "Updated!",
         text: "Profile updated successfully",
         icon: "success",
         timer: 1500,
@@ -227,8 +227,8 @@ const Profile = () => {
     const result = await Swal.fire({
       title: "Delete Account",
       text: isGoogleUser
-        ? "This will sign you out of your Google account. Your Google account itself will not be deleted."
-        : "Are you sure you want to delete your account? This action cannot be undone.",
+        ? "This will sign you out of your Google account."
+        : "Are you sure you want to delete your account? ",
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#d33",

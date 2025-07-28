@@ -1,7 +1,6 @@
-// File: backend/controllers/issueController.js
 const Issue = require('../models/Issue');
 
-// CREATE
+// Create issue
 exports.createIssue = async (req, res) => {
   try {
     const issue = await Issue.create(req.body);
@@ -11,7 +10,7 @@ exports.createIssue = async (req, res) => {
   }
 };
 
-// READ ALL
+// Get all issues
 exports.getAllIssues = async (req, res) => {
   try {
     const issues = await Issue.find();
@@ -21,7 +20,7 @@ exports.getAllIssues = async (req, res) => {
   }
 };
 
-// READ ONE
+// Get one issue by ID
 exports.getIssueById = async (req, res) => {
   try {
     const issue = await Issue.findById(req.params.id);
@@ -32,7 +31,7 @@ exports.getIssueById = async (req, res) => {
   }
 };
 
-// UPDATE
+// Upadate issue
 exports.updateIssue = async (req, res) => {
   try {
     const updatedIssue = await Issue.findByIdAndUpdate(req.params.id, req.body, { new: true });
@@ -42,7 +41,7 @@ exports.updateIssue = async (req, res) => {
   }
 };
 
-// DELETE
+// Delete issue
 exports.deleteIssue = async (req, res) => {
   try {
     await Issue.findByIdAndDelete(req.params.id);

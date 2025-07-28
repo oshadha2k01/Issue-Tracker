@@ -59,7 +59,7 @@ export default function NavBar() {
 
         Swal.fire({
           title: "Logged Out!",
-          text: "You have been successfully logged out. Redirecting to login...",
+          text: "You have been successfully logged out.",
           icon: "success",
           timer: 2000,
           showConfirmButton: false,
